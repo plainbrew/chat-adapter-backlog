@@ -1,4 +1,4 @@
-# Linear
+## Linear
 
 - Workspace: `plainbrew`
 - Team: `Plainbrew Common` (key: `PC`)
