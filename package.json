@@ -1,7 +1,16 @@
 {
   "name": "chat-adapter-backlog",
-  "version": "0.1.0",
+  "version": "0.0.0",
   "description": "Backlog adapter for Chat SDK",
+  "keywords": [
+    "backlog",
+    "chat-adapter",
+    "chat-sdk"
+  ],
+  "license": "MIT",
+  "files": [
+    "dist"
+  ],
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -12,17 +21,19 @@
       "import": "./dist/index.js"
     }
   },
-  "files": ["dist"],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check",
     "test": "vitest run --coverage",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
-    "clean": "rm -rf dist"
-  },
-  "peerDependencies": {
-    "chat": "^4.0.0"
+    "clean": "rm -rf dist",
+    "prepare": "husky"
   },
   "dependencies": {
     "@chat-adapter/shared": "^4.0.0"
@@ -30,13 +41,15 @@
   "devDependencies": {
     "@types/node": "^22.0.0",
     "chat": "^4.0.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
+    "oxfmt": "^0.45.0",
     "tsup": "^8.3.0",
-    "typescript": "^5.7.0",
+    "typescript": "^6.0.3",
     "vitest": "^4.0.0"
   },
-  "publishConfig": {
-    "access": "public"
+  "peerDependencies": {
+    "chat": "^4.0.0"
   },
-  "keywords": ["chat-sdk", "chat-adapter", "backlog"],
-  "license": "MIT"
+  "packageManager": "pnpm@10.32.1"
 }
