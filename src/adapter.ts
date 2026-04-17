@@ -12,6 +12,7 @@ import {
   type ThreadInfo,
 } from "chat";
 
+import { BacklogClient } from "./backlog-client.js";
 import { BacklogFormatConverter } from "./format-converter.js";
 import type { BacklogConfig, BacklogThreadId } from "./types.js";
 
@@ -20,12 +21,14 @@ export class BacklogAdapter implements Adapter<BacklogThreadId, unknown> {
   readonly userName: string;
 
   private config: BacklogConfig;
+  private client: BacklogClient;
   private formatConverter: BacklogFormatConverter;
   protected chat?: ChatInstance;
 
   constructor(config: BacklogConfig) {
     this.config = config;
     this.userName = config.userName ?? "Backlog Bot";
+    this.client = new BacklogClient(config.host, config.apiKey);
     this.formatConverter = new BacklogFormatConverter();
   }
 
@@ -83,8 +86,19 @@ export class BacklogAdapter implements Adapter<BacklogThreadId, unknown> {
     throw new NotImplementedError("fetchMessages is not yet implemented", "fetchMessages");
   }
 
-  async fetchThread(_threadId: string): Promise<ThreadInfo> {
-    throw new NotImplementedError("fetchThread is not yet implemented", "fetchThread");
+  async fetchThread(threadId: string): Promise<ThreadInfo> {
+    const { issueKey, projectKey } = this.decodeThreadId(threadId);
+    const issue = await this.client.getIssue(issueKey);
+    return {
+      id: threadId,
+      channelId: this.channelIdFromThreadId(threadId),
+      channelName: projectKey,
+      metadata: {
+        issueKey: issue.issueKey,
+        summary: issue.summary,
+        issue,
+      },
+    };
   }
 
   async handleWebhook(_request: Request): Promise<Response> {
