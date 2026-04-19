@@ -1,4 +1,5 @@
 import { createLinearAdapter } from "@chat-adapter/linear";
+import { createRedisState } from "@chat-adapter/state-redis";
 import { Chat } from "chat";
 import { BacklogAdapter } from "chat-adapter-backlog";
 
@@ -11,6 +12,7 @@ export const bot = new Chat({
     }),
     linear: createLinearAdapter(),
   },
+  state: createRedisState(),
 });
 
 bot.onNewMention(async (thread, message) => {
