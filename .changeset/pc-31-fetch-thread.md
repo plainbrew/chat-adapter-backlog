@@ -2,4 +2,4 @@
 "chat-adapter-backlog": minor
 ---
 
-Implement `fetchThread` for `BacklogAdapter`
+feat: Implement `fetchThread` for `BacklogAdapter`
