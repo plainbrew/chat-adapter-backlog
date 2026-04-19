@@ -14,6 +14,7 @@ import {
   toPlainText,
 } from "chat";
 
+import { BacklogClient, type BacklogComment } from "./backlog-client.js";
 import { BacklogFormatConverter } from "./format-converter.js";
 import type { BacklogConfig, BacklogThreadId, BacklogWebhookPayload } from "./types.js";
 
@@ -145,10 +146,14 @@ export class BacklogAdapter implements Adapter<BacklogThreadId, unknown> {
   }
 
   async postMessage(
-    _threadId: string,
-    _message: AdapterPostableMessage,
-  ): Promise<RawMessage<unknown>> {
-    throw new NotImplementedError("postMessage is not yet implemented", "postMessage");
+    threadId: string,
+    message: AdapterPostableMessage,
+  ): Promise<RawMessage<BacklogComment>> {
+    const { issueKey } = this.decodeThreadId(threadId);
+    const content = this.formatConverter.renderPostable(message);
+    const client = new BacklogClient(this.config.host, this.config.apiKey);
+    const comment = await client.postComment(issueKey, content);
+    return { id: String(comment.id), raw: comment, threadId };
   }
 
   async removeReaction(
