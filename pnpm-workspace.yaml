@@ -1,5 +1,5 @@
 packages:
   - "packages/*"
-  - "example"
+  - "examples/*"
 
 minimumReleaseAge: 4320 # 3d
