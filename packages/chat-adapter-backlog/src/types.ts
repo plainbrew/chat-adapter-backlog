@@ -1,3 +1,14 @@
+import type { BacklogComment } from "./backlog-client.js";
+
+export type { BacklogComment };
+
+export interface BacklogRawMessage {
+  comment: BacklogComment;
+  issueKey: string;
+  spaceKey: string;
+  projectKey: string;
+}
+
 export interface BacklogWebhookUser {
   id: number;
   userId: string;

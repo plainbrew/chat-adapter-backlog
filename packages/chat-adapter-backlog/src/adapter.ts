@@ -15,11 +15,16 @@ import {
 } from "chat";
 
 import { BacklogFormatConverter } from "./format-converter.js";
-import type { BacklogConfig, BacklogThreadId, BacklogWebhookPayload } from "./types.js";
+import type {
+  BacklogConfig,
+  BacklogRawMessage,
+  BacklogThreadId,
+  BacklogWebhookPayload,
+} from "./types.js";
 
 const BACKLOG_ACTIVITY_TYPE_ISSUE_UPDATED = 2;
 
-export class BacklogAdapter implements Adapter<BacklogThreadId, unknown> {
+export class BacklogAdapter implements Adapter<BacklogThreadId, BacklogRawMessage> {
   readonly name = "backlog";
   readonly userName: string;
 
@@ -79,11 +84,14 @@ export class BacklogAdapter implements Adapter<BacklogThreadId, unknown> {
     _threadId: string,
     _messageId: string,
     _message: AdapterPostableMessage,
-  ): Promise<RawMessage<unknown>> {
+  ): Promise<RawMessage<BacklogRawMessage>> {
     throw new NotImplementedError("editMessage is not yet implemented", "editMessage");
   }
 
-  async fetchMessages(_threadId: string, _options?: FetchOptions): Promise<FetchResult<unknown>> {
+  async fetchMessages(
+    _threadId: string,
+    _options?: FetchOptions,
+  ): Promise<FetchResult<BacklogRawMessage>> {
     throw new NotImplementedError("fetchMessages is not yet implemented", "fetchMessages");
   }
 
@@ -140,14 +148,36 @@ export class BacklogAdapter implements Adapter<BacklogThreadId, unknown> {
     return new Response(null, { status: 200 });
   }
 
-  parseMessage(_raw: unknown): Message<unknown> {
-    throw new NotImplementedError("parseMessage is not yet implemented", "parseMessage");
+  parseMessage(raw: BacklogRawMessage): Message<BacklogRawMessage> {
+    const { comment, issueKey, spaceKey, projectKey } = raw;
+    const threadId = this.encodeThreadId({ spaceKey, projectKey, issueKey });
+    const content = comment.content ?? "";
+    const formatted = this.formatConverter.toAst(content);
+    return new Message({
+      id: String(comment.id),
+      threadId,
+      text: toPlainText(formatted),
+      formatted,
+      raw,
+      author: {
+        userId: String(comment.createdUser.id),
+        userName: comment.createdUser.userId,
+        fullName: comment.createdUser.name,
+        isBot: false,
+        isMe: false,
+      },
+      metadata: {
+        dateSent: new Date(comment.created),
+        edited: comment.created !== comment.updated,
+      },
+      attachments: [],
+    });
   }
 
   async postMessage(
     _threadId: string,
     _message: AdapterPostableMessage,
-  ): Promise<RawMessage<unknown>> {
+  ): Promise<RawMessage<BacklogRawMessage>> {
     throw new NotImplementedError("postMessage is not yet implemented", "postMessage");
   }
 
