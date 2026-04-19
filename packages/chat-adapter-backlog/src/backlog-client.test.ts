@@ -74,6 +74,29 @@ describe("BacklogClient", () => {
       expect(result).toEqual(comments);
       expect(capturedUrl(spy)).toContain(`/issues/PROJ-1/comments`);
     });
+
+    it("appends query params when options are provided", async () => {
+      const spy = mockFetch([]);
+
+      await makeClient().getComments("PROJ-1", { order: "desc", count: 50, maxId: 99 });
+
+      const url = capturedUrl(spy);
+      expect(url).toContain("order=desc");
+      expect(url).toContain("count=50");
+      expect(url).toContain("maxId=99");
+    });
+
+    it("omits query params not in options", async () => {
+      const spy = mockFetch([]);
+
+      await makeClient().getComments("PROJ-1", { order: "asc" });
+
+      const url = capturedUrl(spy);
+      expect(url).toContain("order=asc");
+      expect(url).not.toContain("minId");
+      expect(url).not.toContain("maxId");
+      expect(url).not.toContain("count");
+    });
   });
 
   describe("postComment", () => {
