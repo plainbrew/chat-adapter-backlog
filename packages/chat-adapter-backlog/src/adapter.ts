@@ -6,14 +6,18 @@ import {
   type FetchOptions,
   type FetchResult,
   type FormattedContent,
-  type Message,
+  Message,
   NotImplementedError,
   type RawMessage,
   type ThreadInfo,
+  type WebhookOptions,
+  toPlainText,
 } from "chat";
 
 import { BacklogFormatConverter } from "./format-converter.js";
-import type { BacklogConfig, BacklogThreadId } from "./types.js";
+import type { BacklogConfig, BacklogThreadId, BacklogWebhookPayload } from "./types.js";
+
+const BACKLOG_ACTIVITY_TYPE_ISSUE_UPDATED = 2;
 
 export class BacklogAdapter implements Adapter<BacklogThreadId, unknown> {
   readonly name = "backlog";
@@ -87,8 +91,53 @@ export class BacklogAdapter implements Adapter<BacklogThreadId, unknown> {
     throw new NotImplementedError("fetchThread is not yet implemented", "fetchThread");
   }
 
-  async handleWebhook(_request: Request): Promise<Response> {
-    throw new NotImplementedError("handleWebhook is not yet implemented", "handleWebhook");
+  async handleWebhook(request: Request, options?: WebhookOptions): Promise<Response> {
+    let payload: BacklogWebhookPayload;
+    try {
+      payload = (await request.json()) as BacklogWebhookPayload;
+    } catch {
+      return new Response("Invalid JSON", { status: 400 });
+    }
+
+    if (
+      payload.type !== BACKLOG_ACTIVITY_TYPE_ISSUE_UPDATED ||
+      !payload.content?.comment?.content
+    ) {
+      return new Response(null, { status: 200 });
+    }
+
+    const spaceKey = this.config.host.split(".")[0];
+    const projectKey = payload.project.projectKey;
+    const issueKey = `${projectKey}-${payload.content.key_id}`;
+    const threadId = this.encodeThreadId({ spaceKey, projectKey, issueKey });
+
+    const comment = payload.content.comment;
+    // content is verified non-null by the guard above
+    const formatted = this.formatConverter.toAst(comment.content!);
+
+    const message = new Message({
+      id: String(comment.id),
+      threadId,
+      text: toPlainText(formatted),
+      formatted,
+      raw: payload,
+      author: {
+        userId: String(payload.createdUser.id),
+        userName: payload.createdUser.userId,
+        fullName: payload.createdUser.name,
+        isBot: false,
+        isMe: false,
+      },
+      metadata: {
+        dateSent: new Date(payload.created),
+        edited: false,
+      },
+      attachments: [],
+    });
+
+    this.chat?.processMessage(this, threadId, message, options);
+
+    return new Response(null, { status: 200 });
   }
 
   parseMessage(_raw: unknown): Message<unknown> {

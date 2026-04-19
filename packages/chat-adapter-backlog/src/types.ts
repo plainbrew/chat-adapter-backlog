@@ -1,3 +1,36 @@
+export interface BacklogWebhookUser {
+  id: number;
+  userId: string;
+  name: string;
+}
+
+export interface BacklogWebhookComment {
+  id: number;
+  content: string | null;
+}
+
+export interface BacklogWebhookContent {
+  id: number;
+  key_id: number;
+  summary: string;
+  comment: BacklogWebhookComment | null;
+}
+
+export interface BacklogWebhookProject {
+  id: number;
+  projectKey: string;
+  name: string;
+}
+
+export interface BacklogWebhookPayload {
+  id: number;
+  type: number;
+  project: BacklogWebhookProject;
+  content: BacklogWebhookContent;
+  createdUser: BacklogWebhookUser;
+  created: string;
+}
+
 export interface BacklogThreadId {
   /** Backlog space key (e.g., "myspace" in myspace.backlog.com) */
   spaceKey: string;
