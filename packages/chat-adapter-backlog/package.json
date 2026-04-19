@@ -1,0 +1,49 @@
+{
+  "name": "chat-adapter-backlog",
+  "version": "0.0.0",
+  "description": "Backlog adapter for Chat SDK",
+  "keywords": [
+    "backlog",
+    "chat-adapter",
+    "chat-sdk"
+  ],
+  "license": "MIT",
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run --coverage",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@chat-adapter/shared": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@vitest/coverage-v8": "^4.1.4",
+    "chat": "^4.0.0",
+    "tsup": "^8.3.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.0.0"
+  },
+  "peerDependencies": {
+    "chat": "^4.0.0"
+  }
+}

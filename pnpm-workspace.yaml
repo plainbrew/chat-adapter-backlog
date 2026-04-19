@@ -1,1 +1,4 @@
+packages:
+  - "packages/*"
+
 minimumReleaseAge: 4320 # 3d
