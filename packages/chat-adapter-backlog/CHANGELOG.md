@@ -1,5 +1,11 @@
 # chat-adapter-backlog
 
+## 0.1.1
+
+### Patch Changes
+
+- [#28](https://github.com/plainbrew/chat-adapter-backlog/pull/28) [`e29df45`](https://github.com/plainbrew/chat-adapter-backlog/commit/e29df4553f583b5c42f90d660e78d01f414de588) Thanks [@amotarao](https://github.com/amotarao)! - chore: migrate build tool from tsup to tsdown
+
 ## 0.1.0
 
 ### Minor Changes
