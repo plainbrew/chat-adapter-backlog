@@ -1,5 +1,11 @@
 # chat-adapter-backlog
 
+## 0.1.2
+
+### Patch Changes
+
+- [#30](https://github.com/plainbrew/chat-adapter-backlog/pull/30) [`87591a1`](https://github.com/plainbrew/chat-adapter-backlog/commit/87591a16dca698fe8ea148a99280a91f56b8a6ed) Thanks [@amotarao](https://github.com/amotarao)! - fix: add repository field to package.json for npm provenance verification
+
 ## 0.1.1
 
 ### Patch Changes
