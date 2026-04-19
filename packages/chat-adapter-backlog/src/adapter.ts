@@ -14,6 +14,7 @@ import {
   toPlainText,
 } from "chat";
 
+import { BacklogClient, type BacklogComment, type GetCommentsOptions } from "./backlog-client.js";
 import { BacklogFormatConverter } from "./format-converter.js";
 import type { BacklogConfig, BacklogThreadId, BacklogWebhookPayload } from "./types.js";
 
@@ -25,12 +26,14 @@ export class BacklogAdapter implements Adapter<BacklogThreadId, unknown> {
 
   private config: BacklogConfig;
   private formatConverter: BacklogFormatConverter;
+  private client: BacklogClient;
   protected chat?: ChatInstance;
 
   constructor(config: BacklogConfig) {
     this.config = config;
     this.userName = config.userName ?? "Backlog Bot";
     this.formatConverter = new BacklogFormatConverter();
+    this.client = new BacklogClient(config.host, config.apiKey);
   }
 
   async initialize(chat: ChatInstance): Promise<void> {
@@ -83,8 +86,66 @@ export class BacklogAdapter implements Adapter<BacklogThreadId, unknown> {
     throw new NotImplementedError("editMessage is not yet implemented", "editMessage");
   }
 
-  async fetchMessages(_threadId: string, _options?: FetchOptions): Promise<FetchResult<unknown>> {
-    throw new NotImplementedError("fetchMessages is not yet implemented", "fetchMessages");
+  async fetchMessages(threadId: string, options?: FetchOptions): Promise<FetchResult<unknown>> {
+    const { issueKey } = this.decodeThreadId(threadId);
+    const direction = options?.direction ?? "backward";
+    const limit = Math.min(options?.limit ?? 100, 100);
+    const cursor = options?.cursor;
+
+    const query: GetCommentsOptions = {
+      count: limit,
+      order: direction === "backward" ? "desc" : "asc",
+    };
+
+    if (cursor != null) {
+      const cursorId = parseInt(cursor, 10);
+      if (direction === "backward") {
+        query.maxId = cursorId - 1;
+      } else {
+        query.minId = cursorId + 1;
+      }
+    }
+
+    const comments = await this.client.getComments(issueKey, query);
+    const validComments = comments.filter(
+      (c): c is BacklogComment & { content: string } => c.content != null,
+    );
+
+    // backward: API returns newest-first (desc); reverse to chronological order
+    const chronological = direction === "backward" ? [...validComments].reverse() : validComments;
+
+    const messages = chronological.map((comment) => {
+      const formatted = this.formatConverter.toAst(comment.content);
+      return new Message({
+        id: String(comment.id),
+        threadId,
+        text: toPlainText(formatted),
+        formatted,
+        raw: comment,
+        author: {
+          userId: String(comment.createdUser.id),
+          userName: comment.createdUser.userId,
+          fullName: comment.createdUser.name,
+          isBot: false,
+          isMe: false,
+        },
+        metadata: {
+          dateSent: new Date(comment.created),
+          edited: comment.created !== comment.updated,
+        },
+        attachments: [],
+      });
+    });
+
+    // nextCursor is the ID of the last element in the raw API response
+    // backward (desc order): last = oldest → cursor for even older messages via maxId
+    // forward (asc order): last = newest → cursor for even newer messages via minId
+    let nextCursor: string | undefined;
+    if (comments.length >= limit && comments.length > 0) {
+      nextCursor = String(comments[comments.length - 1].id);
+    }
+
+    return { messages, nextCursor };
   }
 
   async fetchThread(_threadId: string): Promise<ThreadInfo> {

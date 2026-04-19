@@ -22,6 +22,13 @@ export interface BacklogComment {
   createdUser: BacklogUser;
 }
 
+export interface GetCommentsOptions {
+  minId?: number;
+  maxId?: number;
+  count?: number;
+  order?: "asc" | "desc";
+}
+
 export class BacklogApiError extends Error {
   constructor(
     public readonly status: number,
@@ -69,11 +76,17 @@ export class BacklogClient {
     return this.request<BacklogIssue>("GET", `/issues/${encodeURIComponent(issueIdOrKey)}`);
   }
 
-  getComments(issueIdOrKey: string): Promise<BacklogComment[]> {
-    return this.request<BacklogComment[]>(
-      "GET",
-      `/issues/${encodeURIComponent(issueIdOrKey)}/comments`,
-    );
+  getComments(issueIdOrKey: string, options?: GetCommentsOptions): Promise<BacklogComment[]> {
+    const params = new URLSearchParams();
+    if (options?.minId != null) params.set("minId", String(options.minId));
+    if (options?.maxId != null) params.set("maxId", String(options.maxId));
+    if (options?.count != null) params.set("count", String(options.count));
+    if (options?.order != null) params.set("order", options.order);
+    const qs = params.toString();
+    const path = qs
+      ? `/issues/${encodeURIComponent(issueIdOrKey)}/comments?${qs}`
+      : `/issues/${encodeURIComponent(issueIdOrKey)}/comments`;
+    return this.request<BacklogComment[]>("GET", path);
   }
 
   postComment(issueIdOrKey: string, content: string): Promise<BacklogComment> {
