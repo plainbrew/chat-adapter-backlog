@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { BacklogAdapter } from "./adapter.js";
-import type { BacklogWebhookPayload } from "./types.js";
+import type { BacklogRawMessage, BacklogWebhookPayload } from "./types.js";
 
 function makeWebhookRequest(payload: BacklogWebhookPayload): Request {
   return new Request("https://example.com/webhook", {
@@ -141,5 +141,82 @@ describe("handleWebhook", () => {
     const payload = makePayload();
     const response = await adapter.handleWebhook(makeWebhookRequest(payload));
     expect(response.status).toBe(200);
+  });
+});
+
+function makeRawMessage(overrides?: Partial<BacklogRawMessage>): BacklogRawMessage {
+  return {
+    comment: {
+      id: 200,
+      content: "Hello from Backlog",
+      created: "2024-01-01T00:00:00Z",
+      updated: "2024-01-01T00:00:00Z",
+      createdUser: { id: 5, userId: "user1", name: "User One" },
+    },
+    issueKey: "PROJ-123",
+    spaceKey: "myspace",
+    projectKey: "PROJ",
+    ...overrides,
+  };
+}
+
+describe("parseMessage", () => {
+  it("converts a BacklogRawMessage to a Message with correct fields", () => {
+    const raw = makeRawMessage();
+    const message = adapter.parseMessage(raw);
+
+    expect(message.id).toBe("200");
+    expect(message.threadId).toBe("backlog:myspace:PROJ-123");
+    expect(message.text).toBe("Hello from Backlog");
+    expect(message.author.userId).toBe("5");
+    expect(message.author.userName).toBe("user1");
+    expect(message.author.fullName).toBe("User One");
+    expect(message.author.isBot).toBe(false);
+    expect(message.author.isMe).toBe(false);
+    expect(message.metadata.dateSent).toEqual(new Date("2024-01-01T00:00:00Z"));
+    expect(message.metadata.edited).toBe(false);
+    expect(message.raw).toBe(raw);
+  });
+
+  it("treats message as edited when created and updated differ", () => {
+    const raw = makeRawMessage({
+      comment: {
+        id: 200,
+        content: "Edited comment",
+        created: "2024-01-01T00:00:00Z",
+        updated: "2024-01-02T00:00:00Z",
+        createdUser: { id: 5, userId: "user1", name: "User One" },
+      },
+    });
+    const message = adapter.parseMessage(raw);
+    expect(message.metadata.edited).toBe(true);
+  });
+
+  it("converts Backlog markup in comment content using formatConverter", () => {
+    const raw = makeRawMessage({
+      comment: {
+        id: 200,
+        content: "''bold text''",
+        created: "2024-01-01T00:00:00Z",
+        updated: "2024-01-01T00:00:00Z",
+        createdUser: { id: 5, userId: "user1", name: "User One" },
+      },
+    });
+    const message = adapter.parseMessage(raw);
+    expect(message.text).toBe("bold text");
+  });
+
+  it("handles null comment content as empty string", () => {
+    const raw = makeRawMessage({
+      comment: {
+        id: 200,
+        content: null,
+        created: "2024-01-01T00:00:00Z",
+        updated: "2024-01-01T00:00:00Z",
+        createdUser: { id: 5, userId: "user1", name: "User One" },
+      },
+    });
+    const message = adapter.parseMessage(raw);
+    expect(message.text).toBe("");
   });
 });
