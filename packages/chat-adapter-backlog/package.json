@@ -30,8 +30,7 @@
     "test": "vitest run --coverage",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
-    "clean": "rm -rf dist",
-    "postinstall": "pnpm run build"
+    "clean": "rm -rf dist"
   },
   "dependencies": {
     "@chat-adapter/shared": "^4.0.0"

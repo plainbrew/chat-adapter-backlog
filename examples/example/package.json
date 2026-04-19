@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
+    "postinstall": "pnpm --filter chat-adapter-backlog build",
     "dev": "next dev",
     "build": "next build",
     "start": "next start"
