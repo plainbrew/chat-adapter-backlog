@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { BacklogAdapter } from "./adapter.js";
+import type { BacklogComment } from "./backlog-client.js";
 import type { BacklogWebhookPayload } from "./types.js";
 
 function makeWebhookRequest(payload: BacklogWebhookPayload): Request {
@@ -141,5 +142,55 @@ describe("handleWebhook", () => {
     const payload = makePayload();
     const response = await adapter.handleWebhook(makeWebhookRequest(payload));
     expect(response.status).toBe(200);
+  });
+});
+
+describe("postMessage", () => {
+  const mockComment: BacklogComment = {
+    id: 300,
+    content: "Hello from bot",
+    created: "2024-01-01T00:00:00Z",
+    updated: "2024-01-01T00:00:00Z",
+    createdUser: { id: 1, userId: "bot", name: "Bot" },
+  };
+
+  it("posts a comment to the correct issue and returns RawMessage", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response(JSON.stringify(mockComment), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+
+    const threadId = "backlog:myspace:PROJ-123";
+    const result = await adapter.postMessage(threadId, "Hello from bot");
+
+    expect(result.id).toBe("300");
+    expect(result.threadId).toBe(threadId);
+    expect(result.raw).toEqual(mockComment);
+
+    const [url, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
+    expect(url).toContain("/issues/PROJ-123/comments");
+    expect(url).toContain("apiKey=test");
+    expect(init.method).toBe("POST");
+    expect(init.body).toContain("content=Hello+from+bot");
+
+    fetchSpy.mockRestore();
+  });
+
+  it("converts markdown message to Backlog markup before posting", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response(JSON.stringify(mockComment), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+
+    await adapter.postMessage("backlog:myspace:PROJ-123", "**bold**");
+
+    const [, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
+    expect(init.body).toContain("content=");
+
+    fetchSpy.mockRestore();
   });
 });
