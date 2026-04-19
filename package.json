@@ -1,6 +1,7 @@
 {
   "name": "chat-adapter-backlog-root",
   "private": true,
+  "license": "MIT",
   "scripts": {
     "format": "oxfmt",
     "format:check": "oxfmt --check",
