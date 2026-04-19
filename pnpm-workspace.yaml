@@ -2,5 +2,3 @@ packages:
   - "packages/*"
 
 minimumReleaseAge: 4320 # 3d
-minimumReleaseAgeExclude:
-  - typescript
