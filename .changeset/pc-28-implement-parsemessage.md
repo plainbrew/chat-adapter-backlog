@@ -2,4 +2,4 @@
 "chat-adapter-backlog": minor
 ---
 
-Implement `parseMessage` for `BacklogAdapter`
+feat: implement `parseMessage` for `BacklogAdapter`
